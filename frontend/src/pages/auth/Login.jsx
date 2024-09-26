@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-// import Loader from "../../components/Loader";
-// import { setcreadtionls } from "../../redux/feature/auth/authSlice";
-// import { useRegisterMutation } from "../../redux/api/userApi";
+
+import {  setcredtionals} from "../../redux/features/auth/authSlice";
+import { useLoginMutation} from "../../redux/api/userApi";
 import { toast } from "react-toastify";
 
 const Login = () => {
@@ -15,37 +15,35 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-//   const [register, { isLoading }] = useRegisterMutation();
+  const [login, { isLoading }] = useLoginMutation();
 
-//   const { userInfo } = useSelector((state) => state.auth);
+  const { userInfo } = useSelector((state) => state.auth);
 
   const { search } = useLocation();
   const sp = new URLSearchParams(search);
   const redirect = sp.get("redirect") || "/";
     console.log()
   useEffect(() => {
-    // if (userInfo) {
-    //   navigate(redirect);
-    // }
+    if (userInfo) {
+      navigate(redirect);
+    }
   }, [navigate, redirect, ]);
 
-//   const submitHandler = async (e) => {
-//     e.preventDefault();
+  const submitHandler = async (e) => {
+    e.preventDefault();
 
-//     if (password !== confirmPassword) {
-//       toast.error("Password do not match");
-//     } else {
-//       try {
-//         const res = await register({ username, email, password }).unwrap();
-//         dispatch(setcreadtionls({ ...res }));
-//         navigate(redirect);
-//         toast.success("User successfully registered.");
-//       } catch (err) {
-//         console.log(err);
-//         toast.error(err.data.message);
-//       }
-//     }
-//   };
+     
+      try {
+        const res = await login({  email, password }).unwrap();
+        dispatch(setcredtionals({ ...res }));
+        navigate(redirect);
+        toast.success("User successfully login.");
+      } catch (err) {
+        console.log(err);
+        toast.error(err.data.message);
+      }
+    
+  };
 
   return (
     <div>
@@ -53,7 +51,7 @@ const Login = () => {
       <div className="mr-[4rem] mt-[5rem]">
         <h1 className="text-2xl font-semibold mb-4">Sign In</h1>
 
-        <form  className="container w-[40rem]">
+        <form onSubmit={submitHandler} className="container w-[40rem]">
           <div className="my-[2rem]">
             <label
               htmlFor="email"
@@ -88,11 +86,11 @@ const Login = () => {
           </div>
 
           <button
-            // disabled={isLoading}
+            disabled={isLoading}
             type="submit"
             className="bg-teal-500 text-white px-4 py-2 rounded cursor-pointer my-[1rem]"
           >
-            {false? "Signing In ..." : "Sign In"}
+            {isLoading? "Signing In ..." : "Sign In"}
           </button>
           {/* {isLoading && <Loader />} */}
         </form>

@@ -1,52 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { useGetAllUserQuery } from "../../redux/api/userApi";
+import {
+  useGetAllchatQuery,
+  useSendMessageMutation,
+} from "../../redux/api/chatApi";
+import { useSelector } from "react-redux";
 
 const ChatApp = () => {
-  const [messages, setMessages] = useState([]);
-  const [currentMessage, setCurrentMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [currentChat, setCurrentChat] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
+  const [id , setId] = useState('')
 
-  const chatList = [
-    { id: 1, name: "General" },
-    { id: 2, name: "Work" },
-    { id: 3, name: "Friends" },
-  ];
+  const { userInfo } = useSelector((state) => state.auth);
+  const { data: chatData } = useGetAllchatQuery();
+  const { data: allUsersData } = useGetAllUserQuery();
+  const [sendMessage] = useSendMessageMutation();
 
-  // Dummy user data
-  const allUsers = [
-    { id: 1, name: 'John Doe' },
-    { id: 2, name: 'Jane Smith' },
-    { id: 3, name: 'Alice Johnson' },
-    { id: 4, name: 'Bob Brown' },
-  ];
+  // Handling the display of messages in the selected chat
+  const messages = currentChat?.messages || [];
 
-  const handleSendMessage = () => {
-    if (currentMessage.trim()) {
-      setMessages([...messages, { text: currentMessage, sender: "You" }]);
-      setCurrentMessage('');
-    }
+  // Function to handle sending messages
+  const handleSendMessage = async () => {
+    const dd = "66f2a8dfa061bfbb94bf3b38";
+    const res = await sendMessage({ message , id: id }).unwrap();
+    setMessage("")
+    console.log(res);
   };
 
+  // Search functionality for users
   const handleSearch = (e) => {
     const searchValue = e.target.value;
     setSearchTerm(searchValue);
-    
+
     // Filter users based on the search term
-    if (searchValue.trim() !== '') {
-      const results = allUsers.filter(user =>
-        user.name.toLowerCase().includes(searchValue.toLowerCase())
+    if (searchValue.trim() !== "") {
+      const results = allUsersData?.filter((user) =>
+        user.username.toLowerCase().includes(searchValue.toLowerCase())
       );
       setFilteredUsers(results);
     } else {
       setFilteredUsers([]);
     }
   };
-
+  const checkchat = (chat)=>{
+    setCurrentChat(chat)
+    // console.log(currentChat)
+    // console.log(chat)
+    console.log()
+    const dsa = chat.users.filter((user) => user._id !== userInfo._id).map((user) => setId(user._id))
+    console.log(id)
+  }
+const createChat = async(e)=>{
+  setId()
+  
+}
   return (
     <div className="flex flex-col md:flex-row h-screen">
       {/* Chat List / Search Users */}
-      <div className={`w-full md:w-1/4 bg-gray-200 p-4 ${currentChat ? 'hidden md:block' : 'block'}`}>
+      <div
+        className={`w-full md:w-1/4 bg-gray-200 p-4 ${
+          currentChat ? "hidden md:block" : "block"
+        }`}
+      >
         <h2 className="text-xl font-bold mb-4">Chats</h2>
 
         {/* Search User Input */}
@@ -63,14 +80,22 @@ const ChatApp = () => {
         {/* Display search results if searching, otherwise show chat list */}
         {searchTerm ? (
           <ul>
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map(user => (
+            {filteredUsers?.length > 0 ? (
+              filteredUsers.map((user) => (
                 <li
-                  key={user.id}
+                  key={user._id}
                   className="p-2 mb-2 rounded bg-white cursor-pointer hover:bg-blue-100"
-                  onClick={() => alert(`Start chat with ${user.name}`)}
+                  onClick={() => {
+                    setId(user._id)
+                    setCurrentChat({ users: [userInfo, user], messages: [] });
+
+                    // setMessage("...");
+                    // handleSendMessage()
+                    sendMessage('')
+                    setSearchTerm('')
+                  }}
                 >
-                  {user.name}
+                  {user.username}
                 </li>
               ))
             ) : (
@@ -79,13 +104,20 @@ const ChatApp = () => {
           </ul>
         ) : (
           <ul>
-            {chatList.map(chat => (
+            {chatData?.map((chat) => (
               <li
-                key={chat.id}
-                onClick={() => setCurrentChat(chat)}
-                className={`p-2 mb-2 rounded cursor-pointer ${currentChat?.id === chat.id ? 'bg-blue-500 text-white' : 'bg-white'}`}
+                key={chat._id}
+                onClick={() => checkchat(chat) }
+                className={`p-2 mb-2 rounded cursor-pointer ${
+                  currentChat?._id === chat._id
+                    ? "bg-blue-500 text-white"
+                    : "bg-white"
+                }`}
               >
-                {chat.name}
+                {chat.users
+                  .filter((user) => user._id !== userInfo._id)
+                  .map((user) => user.username)
+                  .join(", ")}
               </li>
             ))}
           </ul>
@@ -93,14 +125,29 @@ const ChatApp = () => {
       </div>
 
       {/* Chat Window */}
-      <div className={`flex flex-col w-full md:w-3/4 bg-white ${currentChat ? 'block' : 'hidden md:block'}`}>
+      <div
+        className={`flex flex-col w-full md:w-3/4 bg-white ${
+          currentChat ? "block" : "hidden md:block"
+        }`}
+      >
         <div className="flex-grow overflow-y-auto border-b border-gray-300 p-4">
           {currentChat ? (
             messages.length > 0 ? (
               messages.map((msg, index) => (
-                <div key={index} className={`my-2 p-2 ${msg.sender === "You" ? "text-right" : ""}`}>
-                  <span className={`inline-block p-2 rounded-lg ${msg.sender === "You" ? "bg-blue-500 text-white" : "bg-gray-200"}`}>
-                    {msg.text}
+                <div
+                  key={msg._id || index}
+                  className={`my-2 p-2 ${
+                    msg.sender === userInfo._id ? "text-right" : "text-left"
+                  }`}
+                >
+                  <span
+                    className={`inline-block p-2 rounded-lg ${
+                      msg.sender === userInfo._id
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 text-black"
+                    }`}
+                  >
+                    {msg.message || msg.text}
                   </span>
                 </div>
               ))
@@ -119,9 +166,9 @@ const ChatApp = () => {
               type="text"
               className="flex-grow p-2 border border-gray-300 rounded mr-2"
               placeholder="Type your message..."
-              value={currentMessage}
-              onChange={(e) => setCurrentMessage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
             />
             <button
               className="bg-blue-500 text-white p-2 rounded"

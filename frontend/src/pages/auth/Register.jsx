@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 // import Loader from "../../component/Loader";
-// import { setCredentials } from "../../redux/features/auth/authSlice";
-// import { useRegisterMutation } from "../../redux/api/users";
+import { setcredtionals } from "../../redux/features/auth/authSlice";
+import { useSignUpMutation } from "../../redux/api/userApi";
 import { toast } from "react-toastify";
 
 const Register = () => {
@@ -15,44 +15,45 @@ const Register = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // const [register, { isLoading }] = useRegisterMutation();
+  const [signUp, { isLoading }] = useSignUpMutation();
 
-  // const { userInfo } = useSelector((state) => state.auth);
+  const { userInfo } = useSelector((state) => state.auth);
 
   const { search } = useLocation();
   const sp = new URLSearchParams(search);
   const redirect = sp.get("redirect") || "/";
 
-  // useEffect(() => {
-  //   if (userInfo) {
-  //     navigate(redirect);
-  //   }
-  // }, [navigate, redirect, userInfo]);
+  useEffect(() => {
+    if (userInfo) {
+      navigate(redirect);
+    }
+  }, [navigate, redirect, userInfo]);
 
-  // const submitHandler = async (e) => {
-  //   e.preventDefault();
+  const submitHandler = async (e) => {
+    e.preventDefault();
 
-  //   if (password !== confirmPassword) {
-  //     toast.error("Password do not match");
-  //   } else {
-  //     try {
-  //       const res = await register({ username, email, password }).unwrap();
-  //       dispatch(setCredentials({ ...res }));
-  //       navigate(redirect);
-  //       toast.success("User successfully registered.");
-  //     } catch (err) {
-  //       console.log(err);
-  //       toast.error(err.data.message);
-  //     }
-  //   }
-  // };
+    if (password !== confirmPassword) {
+      toast.error("Password do not match");
+    } else {
+      try {
+        const res = await signUp({ username, email, password }).unwrap();
+        console.log(res)
+        dispatch(setcredtionals({ ...res }));
+        toast.success("User successfully registered.");
+        navigate("/")
+      } catch (err) {
+        console.log(err);
+        toast.error(err.data.message);
+      }
+    }
+  };
 
   return (
     <div className="pl-[10rem] flex flex-wrap">
       <div className="mr-[4rem] mt-[5rem]">
         <h1 className="text-2xl font-semibold mb-4">Register</h1>
 
-        <form  className="container w-[40rem]">
+        <form onSubmit={submitHandler}  className="container w-[40rem]" >
           <div className="my-[2rem]">
             <label
               htmlFor="name"
@@ -123,7 +124,7 @@ const Register = () => {
             type="submit"
             className="bg-teal-500 text-white px-4 py-2 rounded cursor-pointer my-[1rem]"
           >
-            {true ? "Registering..." : "Register"}
+            {isLoading ? "Registering..." : "Register"}
           </button>
 
           {/* {isLoading && <Loader />} */}

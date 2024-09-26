@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "backend":"nodemon backend/index.js",
-    "frontend":"cd frontend && npm run dev"
+    "frontend":"cd frontend && npm run dev",
+    "dev" : "concurrently \"nodemon backend/index.js\" \"cd frontend && npm run dev\""
   },
   "keywords": [],
   "author": "",
