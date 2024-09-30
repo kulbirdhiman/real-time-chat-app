@@ -7,7 +7,7 @@ import {
 import { useSelector } from "react-redux";
 import io from "socket.io-client";
 
-const socket = io("http://localhost:5000"); // Replace with your Socket.IO server URL
+const socket = io("http://localhost:4000"); 
 
 const ChatApp = () => {
   const [message, setMessage] = useState("");
@@ -17,22 +17,17 @@ const ChatApp = () => {
   const [id, setId] = useState("");
 
   const { userInfo } = useSelector((state) => state.auth);
-  const { data: chatData } = useGetAllchatQuery();
+  const { data: chatData, refetch: refetchChats } = useGetAllchatQuery(); 
   const { data: allUsersData } = useGetAllUserQuery();
   const [sendMessage] = useSendMessageMutation();
 
   const messages = currentChat?.messages || [];
 
-  // Connect to the socket and join the chat room
   useEffect(() => {
     if (currentChat) {
-      console.log("Joining chat room:", currentChat._id); // Debugging log
-      socket.emit("joinChat", currentChat._id);
+      socket.emit("joinChat", currentChat._id); // Join the chat room
 
-      // Listen for incoming messages
       socket.on("messageReceived", (newMessage) => {
-        console.log("Message received from socket:", newMessage); // Debugging log
-        // Check if the incoming message belongs to the current chat
         if (newMessage.chatId === currentChat._id) {
           setCurrentChat((prevChat) => ({
             ...prevChat,
@@ -41,36 +36,27 @@ const ChatApp = () => {
         }
       });
     }
-
-    // Cleanup on component unmount or when the currentChat changes
     return () => {
       if (currentChat) {
-        console.log("Leaving chat room:", currentChat._id); // Debugging log
         socket.emit("leaveChat", currentChat._id);
         socket.off("messageReceived");
       }
     };
   }, [currentChat]);
 
-  // Send the message
   const handleSendMessage = async () => {
     if (!message.trim()) return;
-  
+
     try {
-      console.log("Sending message:", message);
-      const res = await sendMessage({ message, id }); // Send message data to server
+      const res = await sendMessage({ message, id }).unwrap(); 
       setMessage("");
-  
-      // Optimistic update (optional)
-      setCurrentChat((prevChat) => ({
-        ...prevChat,
-        messages: [...prevChat.messages, res],
-      }));
-  
-      // Emit message to server for broadcasting
-      socket.emit("sendMessage", { ...res, chatId: currentChat._id });
-      console.log(currentChat._id) // Include chatId
-      console.log("Message sent to socket for broadcast:", res);
+
+      socket.emit("sendMessage", { ...res, chatId: currentChat._id, sender: userInfo._id });
+      refetchChats();
+      const updatedChat = chatData.find((chat) => chat._id === currentChat._id);
+      if (updatedChat) {
+        setCurrentChat(updatedChat); 
+      }
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -193,7 +179,7 @@ const ChatApp = () => {
             </button>
           </div>
         )}
-        
+
         {currentChat && (
           <button
             className="md:hidden bg-gray-300 p-2 rounded m-4"

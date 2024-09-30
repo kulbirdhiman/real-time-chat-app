@@ -13,8 +13,8 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
-    methods: ["POST", "GET"],
+    origin: "http://localhost:5173", // Ensure no trailing slash here
+    pingTimeout: 60000,
   },
 });
 
@@ -29,11 +29,20 @@ io.on("connection", (socket) => {
   });
 
   // Listen for the "sendMessage" event from the client
-  socket.on("sendMessage", (message) => {
-    console.log("Received message from client:", message);
+  socket.on("sendMessage", (messageData) => {
+    const { chatId } = messageData; // Extract chatId from the incoming messageData
+    if (!chatId) {
+      console.error("chatId is missing from messageData");
+      return;
+    }
 
-    // Emit the message to all clients in the chat room
-    io.to(message.chatId).emit("messageReceived", message);
+    console.log("Received message from client:", messageData);
+
+    // Emit the message to all clients in the chat room, excluding the sender
+    socket.to(chatId).emit("messageReceived", messageData);
+
+    // Emit the message to all clients in the chat room, including the sender
+    io.to(chatId).emit("messageReceived", messageData);
   });
 
   // Handle the user disconnecting from the socket
